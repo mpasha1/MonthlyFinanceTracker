@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +56,8 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onNavigateToReminders: () -> Unit,
     onNavigateToCategories: () -> Unit,
-    onNavigateToPastMonths: () -> Unit
+    onNavigateToPastMonths: () -> Unit,
+    onNavigateToSmsTracker: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -134,7 +136,7 @@ fun SettingsScreen(
 
             // App Settings Section
             Text(
-                text = "App Settings",
+                text = "App Settings & Tools",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -147,6 +149,12 @@ fun SettingsScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column {
+                    SettingsOptionRow(
+                        title = "UPI Mandates (SMS Tracker)",
+                        icon = Icons.Default.Sms,
+                        onClick = onNavigateToSmsTracker
+                    )
+
                     SettingsOptionRow(
                         title = "Reminders",
                         icon = Icons.Default.Notifications,

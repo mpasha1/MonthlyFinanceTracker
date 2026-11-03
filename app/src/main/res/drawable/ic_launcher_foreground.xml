@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Wallet Back Shadow / Card Accent -->
+    <path
+        android:fillColor="#2CB67D"
+        android:pathData="M38,40 h32 a4,4 0 0 1 4,4 v4 h-40 v-4 a4,4 0 0 1 4,-4 z" />
+
+    <!-- Wallet Main Body -->
+    <path
+        android:fillColor="#E2F3EB"
+        android:pathData="M32,46 h44 a6,6 0 0 1 6,6 v22 a6,6 0 0 1 -6,6 h-44 a6,6 0 0 1 -6,-6 v-22 a6,6 0 0 1 6,-6 z" />
+
+    <!-- Wallet Inner Accent Line -->
+    <path
+        android:fillColor="#B2DFDB"
+        android:pathData="M26,54 h56 v2 h-56 z" />
+
+    <!-- Wallet Clasp Flap -->
+    <path
+        android:fillColor="#074E3A"
+        android:pathData="M66,54 h14 a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-14 z" />
+
+    <!-- Gold Button on Clasp -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M73,62m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+
+    <!-- Gold Rupee Coin Top Left -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M40,36m-11,0a11,11 0 1,1 22,0a11,11 0 1,1 -22,0" />
+
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M40,36m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0" />
+
+    <!-- Rupee Symbol '₹' in Coin -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37,31 h6 v1.5 h-6 z M37,33.5 h6 v1.5 h-4 l3,4.5 h-2.2 l-3,-4.5 h-0.8 v4.5 h-1.8 z M38.8,33.5 h3 v1 h-3 z" />
+
+</vector>

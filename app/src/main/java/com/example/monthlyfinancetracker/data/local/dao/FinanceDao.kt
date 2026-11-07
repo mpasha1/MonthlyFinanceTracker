@@ -57,6 +57,9 @@ interface FinanceDao {
     @Query("UPDATE commitments SET isArchived = 1 WHERE id = :id")
     suspend fun archiveCommitment(id: Long): Int
 
+    @Query("SELECT * FROM commitments WHERE LOWER(name) = 'other' AND isArchived = 0 ORDER BY id ASC")
+    suspend fun getOtherCommitments(): List<CommitmentEntity>
+
     // --- Payment Records ---
     @Query("SELECT * FROM payment_records WHERE year = :year AND month = :month")
     fun getPaymentRecordsForMonth(year: Int, month: Int): Flow<List<PaymentRecordEntity>>
@@ -72,6 +75,12 @@ interface FinanceDao {
 
     @Delete
     suspend fun deletePaymentRecord(record: PaymentRecordEntity): Int
+
+    @Query("UPDATE payment_records SET commitmentId = :targetCommitmentId WHERE commitmentId = :sourceCommitmentId")
+    suspend fun reassignPaymentRecords(sourceCommitmentId: Long, targetCommitmentId: Long): Int
+
+    @Query("SELECT SUM(amountPaid) FROM payment_records WHERE commitmentId = :commitmentId")
+    suspend fun getTotalPaymentsForCommitment(commitmentId: Long): Double?
 
     // --- Reminder Preferences ---
     @Query("SELECT * FROM reminder_preferences")

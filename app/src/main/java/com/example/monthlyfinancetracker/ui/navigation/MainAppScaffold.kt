@@ -237,7 +237,8 @@ fun MainAppScaffold() {
                 SettingsScreen(
                     onNavigateToReminders = { navController.navigate(Screen.Reminders.route) },
                     onNavigateToCategories = { navController.navigate(Screen.Categories.route) },
-                    onNavigateToPastMonths = { navController.navigate(Screen.PastMonths.route) }
+                    onNavigateToPastMonths = { navController.navigate(Screen.PastMonths.route) },
+                    onNavigateToSmsTracker = { navController.navigate(Screen.SmsTracker.route) }
                 )
             }
 
@@ -251,6 +252,14 @@ fun MainAppScaffold() {
                 val remindersViewModel: RemindersViewModel = viewModel()
                 RemindersScreen(
                     viewModel = remindersViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.SmsTracker.route) {
+                val smsViewModel: com.example.monthlyfinancetracker.ui.screens.sms.SmsViewModel = viewModel()
+                com.example.monthlyfinancetracker.ui.screens.sms.SmsTrackerScreen(
+                    viewModel = smsViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }

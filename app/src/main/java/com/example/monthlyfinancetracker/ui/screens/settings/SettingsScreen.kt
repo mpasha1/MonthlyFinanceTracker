@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +56,8 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     onNavigateToReminders: () -> Unit,
     onNavigateToCategories: () -> Unit,
-    onNavigateToPastMonths: () -> Unit
+    onNavigateToPastMonths: () -> Unit,
+    onNavigateToSmsTracker: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -64,6 +66,15 @@ fun SettingsScreen(
     val repository = remember { FinanceRepository(dao) }
 
     val categories by repository.getAllCategories().collectAsState(initial = emptyList())
+
+    val versionName = remember(context) {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            pInfo.versionName ?: "1.2.0"
+        } catch (e: Exception) {
+            "1.2.0"
+        }
+    }
 
     var showAboutDialog by remember { mutableStateOf(false) }
 
@@ -134,7 +145,7 @@ fun SettingsScreen(
 
             // App Settings Section
             Text(
-                text = "App Settings",
+                text = "App Settings & Tools",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -147,6 +158,12 @@ fun SettingsScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column {
+                    SettingsOptionRow(
+                        title = "UPI Mandates (SMS Tracker)",
+                        icon = Icons.Default.Sms,
+                        onClick = onNavigateToSmsTracker
+                    )
+
                     SettingsOptionRow(
                         title = "Reminders",
                         icon = Icons.Default.Notifications,
@@ -194,7 +211,7 @@ fun SettingsScreen(
                 title = { Text("About Monthly Finance Tracker", fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
-                        text = "Monthly Finance Tracker v1.0\n\n" +
+                        text = "Monthly Finance Tracker v$versionName\n\n" +
                                 "100% Local Storage Guarantee.\n" +
                                 "• No bank connection required.\n" +
                                 "• No cloud or remote server sync.\n" +

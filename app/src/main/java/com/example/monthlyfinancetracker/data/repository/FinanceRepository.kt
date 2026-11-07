@@ -111,6 +111,25 @@ class FinanceRepository(
 
     suspend fun getCommitmentById(id: Long) = dao.getCommitmentWithCategoryById(id)
 
+    suspend fun consolidateOtherCommitments() {
+        val otherCommitments = dao.getOtherCommitments()
+        if (otherCommitments.size <= 1) return
+
+        val primary = otherCommitments.first()
+        val secondaries = otherCommitments.drop(1)
+
+        for (sec in secondaries) {
+            dao.reassignPaymentRecords(sec.id, primary.id)
+            dao.deleteCommitment(sec)
+        }
+
+        val totalPaidSum = dao.getTotalPaymentsForCommitment(primary.id) ?: primary.monthlyAmount
+        val updatedPrimary = primary.copy(
+            monthlyAmount = maxOf(primary.monthlyAmount, totalPaidSum)
+        )
+        dao.updateCommitment(updatedPrimary)
+    }
+
     fun getPaymentsForCommitmentAndMonth(commitmentId: Long, year: Int, month: Int): Flow<List<PaymentRecordEntity>> {
         return dao.getPaymentsForCommitmentAndMonth(commitmentId, year, month)
     }

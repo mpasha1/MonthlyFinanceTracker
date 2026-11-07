@@ -67,6 +67,15 @@ fun SettingsScreen(
 
     val categories by repository.getAllCategories().collectAsState(initial = emptyList())
 
+    val versionName = remember(context) {
+        try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            pInfo.versionName ?: "1.2.0"
+        } catch (e: Exception) {
+            "1.2.0"
+        }
+    }
+
     var showAboutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -202,7 +211,7 @@ fun SettingsScreen(
                 title = { Text("About Monthly Finance Tracker", fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
-                        text = "Monthly Finance Tracker v1.0\n\n" +
+                        text = "Monthly Finance Tracker v$versionName\n\n" +
                                 "100% Local Storage Guarantee.\n" +
                                 "• No bank connection required.\n" +
                                 "• No cloud or remote server sync.\n" +

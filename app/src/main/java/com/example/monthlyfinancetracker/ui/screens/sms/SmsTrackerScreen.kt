@@ -414,7 +414,7 @@ fun SmsTrackerScreen(
                                     expanded = commitmentDropdownExpanded,
                                     onDismissRequest = { commitmentDropdownExpanded = false }
                                 ) {
-                                    commitments.forEach { item ->
+                                    commitments.filter { !it.commitment.name.equals("Other", ignoreCase = true) }.forEach { item ->
                                         DropdownMenuItem(
                                             text = {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -439,7 +439,7 @@ fun SmsTrackerScreen(
                                         )
                                     }
 
-                                    // "Other" Option
+                                    // "Other" Option (no amount label)
                                     DropdownMenuItem(
                                         text = {
                                             Row(verticalAlignment = Alignment.CenterVertically) {

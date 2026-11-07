@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.monthlyfinancetracker.data.local.dao.FinanceDao
 import com.example.monthlyfinancetracker.data.local.entity.CategoryEntity
@@ -21,7 +22,7 @@ import kotlinx.coroutines.launch
         PaymentRecordEntity::class,
         ReminderPreferenceEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,13 +33,22 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE commitments ADD COLUMN durationMonths INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN startYear INTEGER NOT NULL DEFAULT 2026")
+                db.execSQL("ALTER TABLE commitments ADD COLUMN startMonth INTEGER NOT NULL DEFAULT 10")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "monthly_finance_tracker_v3.db"
+                    "monthly_finance_tracker.db"
                 )
+                .addMigrations(MIGRATION_1_2)
                 .addCallback(DatabaseCallback(context))
                 .build()
                 INSTANCE = instance
@@ -54,12 +64,12 @@ abstract class AppDatabase : RoomDatabase() {
             super.onCreate(db)
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
-                    populateDefaultCategoriesAndSampleData(database.financeDao())
+                    populateDefaultCategories(database.financeDao())
                 }
             }
         }
 
-        private suspend fun populateDefaultCategoriesAndSampleData(dao: FinanceDao) {
+        private suspend fun populateDefaultCategories(dao: FinanceDao) {
             val defaultCategories = listOf(
                 CategoryEntity(id = 1, name = "Rent", iconName = "home", colorHex = "#2E7D32", isDefault = true),
                 CategoryEntity(id = 2, name = "Loan EMI", iconName = "bank", colorHex = "#1976D2", isDefault = true),

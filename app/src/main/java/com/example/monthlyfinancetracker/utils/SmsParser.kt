@@ -12,7 +12,11 @@ object SmsParser {
     fun parseSms(messageBody: String): ParsedUpiMandate {
         val isMandateSent = messageBody.contains("UPI Mandate: Sent", ignoreCase = true) ||
                 messageBody.contains("UPI Mandate", ignoreCase = true) ||
-                messageBody.contains("Mandate executed", ignoreCase = true)
+                messageBody.contains("Mandate executed", ignoreCase = true) ||
+                messageBody.contains("Sent Rs.", ignoreCase = true) ||
+                messageBody.contains("Sent Rs", ignoreCase = true) ||
+                messageBody.contains("Sent INR", ignoreCase = true) ||
+                messageBody.contains("Sent ₹", ignoreCase = true)
 
         val amount = extractAmount(messageBody)
         val merchant = extractMerchant(messageBody)

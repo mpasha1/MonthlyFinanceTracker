@@ -2,9 +2,11 @@ package com.example.monthlyfinancetracker.ui.screens.sms
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -37,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,12 +63,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.monthlyfinancetracker.domain.model.CommitmentItem
+import com.example.monthlyfinancetracker.domain.model.PaymentStatus
 import com.example.monthlyfinancetracker.domain.model.SmsMessageItem
+import com.example.monthlyfinancetracker.ui.components.CategoryIcon
 import com.example.monthlyfinancetracker.ui.components.CompactTopBar
 import com.example.monthlyfinancetracker.ui.theme.DarkGreenPrimary
 import com.example.monthlyfinancetracker.ui.theme.StatusPaidText
 import com.example.monthlyfinancetracker.utils.CurrencyUtils
 import com.example.monthlyfinancetracker.utils.DateUtils
+import kotlin.math.abs
 
 @Composable
 fun SmsTrackerScreen(
@@ -86,6 +95,7 @@ fun SmsTrackerScreen(
     }
 
     var selectedSmsForLog by remember { mutableStateOf<SmsMessageItem?>(null) }
+    var autoMatchResultDialogText by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -110,30 +120,59 @@ fun SmsTrackerScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Info Header Banner
+            // Info & Auto-Match Header Banner
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.padding(14.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = DarkGreenPrimary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Reading SMS messages from Current Month (${DateUtils.formatMonthYear(uiState.selectedYear, uiState.selectedMonth)}) filtered by text 'UPI Mandate: Sent'.",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = DarkGreenPrimary,
-                        lineHeight = 16.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = DarkGreenPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Reading SMS messages for ${DateUtils.formatMonthYear(uiState.selectedYear, uiState.selectedMonth)} filtered by text 'UPI Mandate: Sent' or 'Sent Rs.'.",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = DarkGreenPrimary,
+                            lineHeight = 16.sp
+                        )
+                    }
+
+                    if (uiState.hasPermission && uiState.messages.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                viewModel.autoMatchAndPayLoanEmiMandates { count, names ->
+                                    if (count > 0) {
+                                        autoMatchResultDialogText = "Successfully auto-matched and updated $count Loan EMI commitment(s) to PAID:\n\n• " + names.joinToString("\n• ")
+                                    } else {
+                                        Toast.makeText(context, "No matching unpaid Loan EMI commitments found for current SMS amounts.", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreenPrimary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Auto-Match & Mark Loan EMIs as Paid", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
 
@@ -199,6 +238,11 @@ fun SmsTrackerScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uiState.messages) { msg ->
+                        val isAlreadyLogged = msg.amount != null && commitments.any { item ->
+                            item.paymentRecords.any { record -> abs(record.amountPaid - msg.amount) < 1.0 } ||
+                                    (item.status == PaymentStatus.PAID && abs(item.totalAmount - msg.amount) < 1.0)
+                        }
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -271,19 +315,43 @@ fun SmsTrackerScreen(
                                         Spacer(modifier = Modifier.width(1.dp))
                                     }
 
-                                    Button(
-                                        onClick = { selectedSmsForLog = msg },
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = DarkGreenPrimary),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Log Payment", fontSize = 12.sp)
+                                    if (isAlreadyLogged) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Color(0xFFE8F5E9))
+                                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = StatusPaidText,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Already Logged",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = StatusPaidText
+                                            )
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = { selectedSmsForLog = msg },
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreenPrimary),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Add,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Log Payment", fontSize = 12.sp)
+                                        }
                                     }
                                 }
                             }
@@ -296,6 +364,7 @@ fun SmsTrackerScreen(
             if (selectedSmsForLog != null) {
                 val sms = selectedSmsForLog!!
                 var selectedCommitment by remember { mutableStateOf<CommitmentItem?>(commitments.firstOrNull()) }
+                var isOtherSelected by remember { mutableStateOf(false) }
                 var commitmentDropdownExpanded by remember { mutableStateOf(false) }
 
                 AlertDialog(
@@ -317,13 +386,28 @@ fun SmsTrackerScreen(
                             )
 
                             Box {
+                                val displayText = if (isOtherSelected) "Other" else (selectedCommitment?.commitment?.name ?: "Select Commitment")
+
                                 OutlinedTextField(
-                                    value = selectedCommitment?.commitment?.name ?: "Select Commitment",
+                                    value = displayText,
                                     onValueChange = {},
                                     readOnly = true,
-                                    modifier = Modifier.fillMaxWidth(),
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.clickable { commitmentDropdownExpanded = true }
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { commitmentDropdownExpanded = true },
                                     enabled = false,
-                                    shape = RoundedCornerShape(10.dp)
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                        disabledTextColor = MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
 
                                 DropdownMenu(
@@ -332,13 +416,54 @@ fun SmsTrackerScreen(
                                 ) {
                                     commitments.forEach { item ->
                                         DropdownMenuItem(
-                                            text = { Text(item.commitment.name) },
+                                            text = {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    CategoryIcon(
+                                                        iconName = item.category.iconName,
+                                                        colorHex = item.category.colorHex,
+                                                        size = 28.dp,
+                                                        iconSize = 16.dp
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "${item.commitment.name} (${CurrencyUtils.formatRupees(item.totalAmount)})",
+                                                        fontSize = 14.sp
+                                                    )
+                                                }
+                                            },
                                             onClick = {
                                                 selectedCommitment = item
+                                                isOtherSelected = false
                                                 commitmentDropdownExpanded = false
                                             }
                                         )
                                     }
+
+                                    // "Other" Option
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                CategoryIcon(
+                                                    iconName = "more_horiz",
+                                                    colorHex = "#7B1FA2",
+                                                    size = 28.dp,
+                                                    iconSize = 16.dp
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Other",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = DarkGreenPrimary
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            isOtherSelected = true
+                                            selectedCommitment = null
+                                            commitmentDropdownExpanded = false
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -346,13 +471,22 @@ fun SmsTrackerScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                selectedCommitment?.let { target ->
-                                    viewModel.logPaymentFromSms(
-                                        commitmentId = target.commitment.id,
-                                        amount = sms.amount ?: target.totalAmount,
+                                if (isOtherSelected) {
+                                    viewModel.logPaymentForOtherSms(
+                                        amount = sms.amount ?: 0.0,
                                         timestamp = sms.timestamp
                                     ) {
                                         selectedSmsForLog = null
+                                    }
+                                } else {
+                                    selectedCommitment?.let { target ->
+                                        viewModel.logPaymentFromSms(
+                                            commitmentId = target.commitment.id,
+                                            amount = sms.amount ?: target.totalAmount,
+                                            timestamp = sms.timestamp
+                                        ) {
+                                            selectedSmsForLog = null
+                                        }
                                     }
                                 }
                             },
@@ -364,6 +498,20 @@ fun SmsTrackerScreen(
                     dismissButton = {
                         TextButton(onClick = { selectedSmsForLog = null }) {
                             Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            // Auto-match Result Dialog
+            if (autoMatchResultDialogText != null) {
+                AlertDialog(
+                    onDismissRequest = { autoMatchResultDialogText = null },
+                    title = { Text("Auto-Match Success", fontWeight = FontWeight.Bold) },
+                    text = { Text(autoMatchResultDialogText!!) },
+                    confirmButton = {
+                        TextButton(onClick = { autoMatchResultDialogText = null }) {
+                            Text("OK")
                         }
                     }
                 )

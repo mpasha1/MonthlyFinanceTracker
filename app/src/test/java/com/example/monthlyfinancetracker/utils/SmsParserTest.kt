@@ -23,4 +23,13 @@ class SmsParserTest {
         assertTrue(result.isUpiMandateSent)
         assertEquals(18500.0, result.amount!!, 0.01)
     }
+
+    @Test
+    fun testSentRsSmsParsing() {
+        val sampleSms = "Sent Rs. 12,438 to PhonePe Loan Account on 03-11-2026."
+        val result = SmsParser.parseSms(sampleSms)
+
+        assertTrue(result.isUpiMandateSent)
+        assertEquals(12438.0, result.amount!!, 0.01)
+    }
 }

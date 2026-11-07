@@ -64,9 +64,13 @@ object SmsReader {
                     val body = c.getString(bodyIdx) ?: ""
                     val date = c.getLong(dateIdx)
 
-                    // Filter by text "UPI Mandate: Sent" or "UPI Mandate"
+                    // Filter by text "UPI Mandate: Sent", "UPI Mandate", or "Sent Rs."
                     if (body.contains("UPI Mandate: Sent", ignoreCase = true) ||
-                        body.contains("UPI Mandate", ignoreCase = true)
+                        body.contains("UPI Mandate", ignoreCase = true) ||
+                        body.contains("Sent Rs.", ignoreCase = true) ||
+                        body.contains("Sent Rs", ignoreCase = true) ||
+                        body.contains("Sent INR", ignoreCase = true) ||
+                        body.contains("Sent ₹", ignoreCase = true)
                     ) {
                         val parsed = SmsParser.parseSms(body)
                         messagesList.add(
